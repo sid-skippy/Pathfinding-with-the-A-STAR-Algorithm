@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A* Maze Solver</title>
+<style>
+  :root {
+    --bg-color: #f0f2f5;
+    --grid-bg: #ffffff;
+    --grid-border: #d1d9e0;
+    --grid-lines: #e4eaf0;
+    --text-color: #333;
+    
+    --btn-bg: #007aff;
+    --btn-hover: #0056b3;
+    --btn-disabled: #a0cffc;
+    --btn-info-bg: #6c757d;
+    --btn-info-hover: #5a6268;
+
+    --start-node: #2ecc71;  /* Green */
+    --end-node: #e74c3c;    /* Red */
+    --wall-node: #34495e;   /* Dark Blue/Grey */
+    --path-node: #f1c40f;   /* Yellow */
+    --visited-node: #9cd9ff; /* Light Blue */
+  }
+
+  body {
+    font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    text-align: center;
+    margin: 0;
+    /* Added padding to make room for the new header */
+    padding: 70px 20px 20px 20px;
+    transition: background-color 0.3s, color 0.3s;
+    position: relative;
+  }
+  
+  /* --- NEW: Header for Toggle and Credits --- */
+  .top-bar {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  h1 { margin-top: 0; font-weight: 600; }
+  #controls { margin: 20px 0; }
+
+  button {
+    font-size: 16px;
+    font-weight: 500;
+    background: var(--btn-bg);
+    border: none;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 8px;
+    margin: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+  }
+  button:hover { background: var(--btn-hover); transform: translateY(-1px); }
+  button:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2); }
+  button:disabled { background-color: var(--btn-disabled); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Info Button Styles */
+  .btn-info {
+    background: var(--btn-info-bg);
+    font-size: 14px;
+    padding: 8px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .btn-info:hover { background: var(--btn-info-hover); }
+  .info-buttons { margin-top: 15px; }
+  .btn-info.active {
+    background: var(--btn-hover);
+    box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3) inset;
+    transform: translateY(1px);
+  }
+
+  #main-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 0 20px;
+    flex-wrap: wrap; 
+  }
+
+  #grid-container {
+    flex-shrink: 0; 
+  }
+  
+  #grid {
+    display: grid;
+    margin: 0 auto; 
+    border: 2px solid var(--grid-border);
+    background: var(--grid-bg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+    width: max-content;
+    border-radius: 4px;
+    overflow: hidden; 
+  }
+
+  .cell {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #000;
+    background: var(--grid-bg);
+    transition: background-color 0.3s ease, transform 0.1s ease-out;
+  }
+  
+  .cell.start { background: var(--start-node); }
+  .cell.end { background: var(--end-node); }
+  
+  .cell.start, .cell.end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wall-node);
+  }
+
+  .cell.wall { background: var(--wall-node); transition: background-color 0.1s ease; }
+  .cell.visited { background: var(--visited-node); transform: scale(1.1); transition-duration: 0.1s; }
+  .cell.path { background: var(--path-node); transform: scale(1.1); transition-property: background-color, transform; transition-duration: 0.2s; }
+
+  /* --- UPDATED: Theme Toggle Styles --- */
+  .theme-switch-wrapper { 
+    display: flex; 
+    align-items: center; 
+    /* Removed margin-top and justify-content */
+  }
+  .theme-switch-wrapper span { font-size: 24px; margin: 0 10px; }
+  .theme-switch { position: relative; display: inline-block; width: 70px; height: 34px; }
+  .theme-switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: 0.4s; }
+  .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: 0.4s; }
+  input:checked + .slider { background-color: var(--btn-bg); }
+  input:checked + .slider:before { transform: translateX(17px); }
+  .slider.round { border-radius: 34px; }
+  .slider.round:before { border-radius: 50%; }
+
+  /* === DARK MODE THEME === */
+  body.dark-mode {
+    --bg-color: #121212;
+    --grid-bg: #1e1e1e;
+    --grid-border: #444;
+    --grid-lines: #333;
+    --text-color: #f5f5ff;
+    --wall-node: #555;
+    --visited-node: #3b5998;
+    --visited-pop: #5c7fba;
+  }
+  body.dark-mode .cell { border: 1px solid #000; }
+  body.dark-mode .cell.start,
+  body.dark-mode .cell.end { color: var(--bg-color); }
+  body.dark-mode .btn-info { background: #333; border: 1px solid #555; }
+  body.dark-mode .btn-info:hover { background: #444; }
+  body.dark-mode .btn-info.active { background: #0056b3; }
+
+
+  /* --- SLIDER STYLES --- */
+  .slider-wrapper { display: flex; align-items: center; justify-content: center; margin-top: 15px; color: var(--text-color); }
+  .slider-wrapper span { font-size: 14px; font-weight: 500; margin: 0 10px; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 200px; height: 8px; background: var(--grid-border); border-radius: 5px; outline: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--btn-bg); border-radius: 50%; cursor: pointer; }
+  input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: var(--btn-bg); border-radius: 50%; cursor: pointer; }
+  body.dark-mode input[type="range"] { background: var(--grid-border); }
+  
+  /* --- STATS CONTAINER --- */
+  #stats-container { 
+    display: flex; 
+    justify-content: center; 
+    gap: 20px; 
+    /* Updated margin */
+    margin: 20px auto 10px auto; 
+    width: 300px; 
+  }
+  .stat-box { flex-basis: 120px; padding: 10px 15px; background: var(--grid-bg); border: 2px solid var(--grid-border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .stat-box h3 { margin: 0 0 5px 0; font-size: 14px; font-weight: 600; color: #777; }
+  .stat-box p { margin: 0; font-size: 24px; font-weight: 700; color: var(--btn-bg); }
+  body.dark-mode .stat-box { background: var(--grid-bg); border-color: var(--grid-border); }
+  body.dark-mode .stat-box h3 { color: #aaa; }
+
+  /* --- UPDATED: Credits Style --- */
+  .credits { 
+    /* Removed margin-top */
+    font-size: 12px; 
+    color: #777; 
+    line-height: 1.4; 
+    text-align: right;
+    margin: 0; /* Reset margin */
+  }
+  body.dark-mode .credits { color: #aaa; }
+
+
+  /* --- INFO PANEL STYLES --- */
+  .info-panel {
+    flex: 1; 
+    max-width: 350px;
+    min-width: 250px; 
+    background: var(--grid-bg);
+    color: var(--text-color);
+    border: 2px solid var(--grid-border);
+    border-radius: 8px;
+    padding: 10px 25px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+    text-align: left;
+    line-height: 1.6;
+    max-height: 1000px; 
+    transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out, margin 0.4s ease-in-out, border-width 0.4s ease-in-out, opacity 0.4s ease-in-out;
+    opacity: 1;
+  }
+  .info-panel.hidden {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    border-width: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+  .info-panel h3 {
+    font-weight: 600;
+    border-bottom: 2px solid var(--grid-border);
+    padding-bottom: 5px;
+  }
+  .info-panel p { margin-bottom: 15px; }
+  .info-panel code {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-family: monospace;
+    font-size: 0.95em;
+  }
+  
+  body.dark-mode .info-panel {
+    background: #2a2a2a;
+    border-color: var(--grid-border);
+  }
+  body.dark-mode .info-panel code {
+    background: rgba(255,255,255,0.1);
+  }
+</style>
+</head>
+<body>
+
+  <!-- --- NEW HEADER --- -->
+  <header class="top-bar">
+    <div class="theme-switch-wrapper">
+      <span>☀️</span>
+      <label class="theme-switch" for="theme-toggle">
+        <input type="checkbox" id="theme-toggle" />
+        <span class="slider round"></span>
+      </label>
+      <span>🌙</span>
+    </div>
+    <p class="credits">
+      Made by: <br>Siddhartha Gupta (24BCE5063)<br/>
+      Abhishek Paul (24BCE5053)
+    </p>
+  </header>
+  
+  <h1>🌟 A-STAR (A*) Maze Generator & Solver</h1>
+  
+  <div id="controls">
+    <button id="generate">Generate Solvable Maze</button>
+    <button id="solve">Solve Maze (A*)</button>
+
+    <!-- Theme toggle moved to header -->
+
+    <div class="slider-wrapper">
+      <span>Slow</span>
+      <input type="range" min="1" max="100" value="80" id="speed-slider">
+      <span>Fast</span>
+    </div>
+
+    <!-- --- STATS MOVED HERE --- -->
+    <div id="stats-container">
+      <div class="stat-box">
+        <h3>Visited</h3>
+        <p id="visited-count">0</p>
+      </div>
+      <div class="stat-box">
+        <h3>Path Length</h3>
+        <p id="path-count">0</p>
+      </div>
+    </div>
+
+    <div class="info-buttons">
+      <button id="what-is-astar" class="btn-info">What is A*?</button>
+      <button id="astar-vs-dijkstra" class="btn-info">A* vs. Dijkstra's</button>
+    </div>
+  </div>
+
+  <div id="main-container">
+    
+    <!-- Left Info Panel -->
+    <div id="info-panel-left" class="info-panel hidden">
+      <!-- Content injected by JS -->
+    </div>
+    
+    <!-- Center Content -->
+    <div id="grid-container">
+      <div id="grid"></div>
+      <!-- Stats container moved up -->
+    </div>
+
+    <!-- Right Info Panel -->
+    <div id="info-panel-right" class="info-panel hidden">
+      <!-- Content injected by JS -->
+    </div>
+
+  </div> <!-- End #main-container -->
+  
+  <!-- Credits moved to header -->
+  
+  <script src="script.js"></script>
+</body>
+</html>
+
