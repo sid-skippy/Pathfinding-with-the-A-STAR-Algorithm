@@ -1,4 +1,4 @@
-🌟 Project Summary: A* Pathfinding Visualizer 🌟
+<img src="UI.png" width="500">
 
 This project is an interactive, web-based application built with HTML, CSS, and JavaScript that visualizes the A* (A-Star) pathfinding algorithm. It allows users to generate a random, solvable maze on a 2D grid and then watch the algorithm find the shortest path from a start node to an end node.
 
