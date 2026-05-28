@@ -32,8 +32,4 @@ What the A* algorithm is.
 
 The key differences between A* and Dijkstra's algorithm.
 
-## Author
-
-- [@Siddhartha Gupta](https://github.com/sid-skippy)
-
 
