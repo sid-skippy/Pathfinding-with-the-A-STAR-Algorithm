@@ -1,5 +1,9 @@
 <img src="UI.png" width="500">
 
+## 🌐 Live Demo
+
+🔗 https://sid-skippy.github.io/Pathfinding-with-the-A-STAR-Algorithm/
+
 This project is an interactive, web-based application built with HTML, CSS, and JavaScript that visualizes the A* (A-Star) pathfinding algorithm. It allows users to generate a random, solvable maze on a 2D grid and then watch the algorithm find the shortest path from a start node to an end node.
 
 The core of the project is a highly efficient A* implementation that uses a Priority Queue (Min-Heap) to achieve $O(N \log N)$ time complexity, a significant optimization over a simple array-based approach.
